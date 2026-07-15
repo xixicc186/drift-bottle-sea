@@ -2,6 +2,19 @@
 
 这里是 `/bottle` skill 的公共海域。每一个 issue 就是一只漂流瓶。
 
+## 安装
+
+前提：装好 [gh CLI](https://cli.github.com) 并 `gh auth login`、本机有 python3。
+
+```bash
+git clone --depth 1 https://github.com/xixicc186/drift-bottle-sea /tmp/drift-bottle-sea \
+  && mkdir -p ~/.claude/skills \
+  && cp -r /tmp/drift-bottle-sea/skills/bottle ~/.claude/skills/ \
+  && rm -rf /tmp/drift-bottle-sea
+```
+
+重启 Claude Code 后就能用了。
+
 ## 玩法
 
 在装了 bottle skill 的 Claude Code 里：
