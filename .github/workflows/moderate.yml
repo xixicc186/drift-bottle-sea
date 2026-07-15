@@ -1,0 +1,75 @@
+name: 瓶子审核闸门
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 审核瓶子
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+
+            const reject = async (reason) => {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: issue.number,
+                body: `🚫 这个瓶子被海关拦下了：${reason}\n\n瓶子不会进入渔场。`,
+              });
+              await github.rest.issues.addLabels({
+                ...context.repo, issue_number: issue.number, labels: ['rejected'],
+              });
+              await github.rest.issues.update({
+                ...context.repo, issue_number: issue.number, state: 'closed',
+              });
+            };
+
+            // 1. 格式校验：必须带 bottle-meta 元数据
+            const metaMatch = body.match(/<!--\s*bottle-meta\s*(\{[\s\S]*?\})\s*-->/);
+            if (!metaMatch) {
+              return reject('格式不对，缺少 bottle-meta 元数据。请用 /bottle skill 扔瓶子，或按 issue 模板格式来。');
+            }
+            let meta;
+            try {
+              meta = JSON.parse(metaMatch[1]);
+            } catch (e) {
+              return reject('元数据 JSON 无法解析。');
+            }
+            if (!meta.author_hash || !/^[0-9a-f]{8,64}$/.test(meta.author_hash)) {
+              return reject('元数据缺少合法的 author_hash。');
+            }
+
+            // 2. 提取正文（去掉元数据注释后的部分）
+            const content = body.replace(/<!--\s*bottle-meta[\s\S]*?-->/, '').trim();
+            const len = [...content].length;
+            if (len < 10) return reject('瓶子太轻了（正文不足 10 字），会浮不起来。');
+            if (len > 500) return reject('瓶子太重了（正文超过 500 字），会沉底。');
+
+            // 3. 内容黑名单：隐私信息 + 引流 + 垃圾内容特征
+            const rules = [
+              [/1[3-9]\d{9}/, '疑似手机号'],
+              [/\d{17}[\dXx]/, '疑似身份证号'],
+              [/https?:\/\/|www\./i, '不允许携带链接'],
+              [/(加|\+)\s*(微信|weixin|wx|vx|v信|QQ|qq)[:：\s]*\S*/i, '疑似引流信息'],
+              [/(博彩|赌博|贷款|办证|发票|代考|刷单|兼职日结)/, '疑似垃圾广告'],
+              [/[\w.+-]+@[\w-]+\.[\w.]+/, '不允许携带邮箱地址'],
+            ];
+            for (const [re, reason] of rules) {
+              if (re.test(content)) return reject(reason);
+            }
+
+            // 4. 过审：打上 floating，瓶子入海
+            await github.rest.issues.addLabels({
+              ...context.repo, issue_number: issue.number, labels: ['floating'],
+            });
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number: issue.number,
+              body: '🌊 瓶子已经漂进大海，等着有缘人捞起。',
+            });
