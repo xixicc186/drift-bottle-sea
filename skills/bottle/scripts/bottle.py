@@ -15,6 +15,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from render_bottle import calm, fished, sealed  # noqa: E402
+
 REPO = "xixicc186/drift-bottle-sea"
 STATE_FILE = Path.home() / ".bottle" / "state.json"
 META_RE = re.compile(r"<!--\s*bottle-meta\s*(\{.*?\})\s*-->", re.S)
@@ -79,8 +82,8 @@ def cmd_throw(content):
     url = gh("issue", "create", "-R", REPO,
              "--title", f"🍾 {codename} 的漂流瓶",
              "--body-file", "-", input_=body).strip()
-    print(f"🍾 瓶子已扔进海里（{codename}），正在等海关放行。")
-    print(f"   {url}")
+    print(sealed(codename))
+    print(f"\n（过审后入海 · {url}）")
 
 
 def check_echoes(state, my_hash):
@@ -136,16 +139,31 @@ def cmd_fish():
         meta = parse_meta(issue["body"])
         state["last_caught"] = num
         save_state(state)
-        print("🎣 捞到一只瓶子！")
-        print(f"   来自：{sailor_name(meta['author_hash'])}")
-        print(f"   扔于：{meta.get('thrown_at', '未知时间')}")
-        print("   ── 瓶中信 ──")
-        print(bottle_text(issue["body"]))
+        print("🎣 捞到一只瓶子！\n")
+        print(fished(bottle_text(issue["body"]),
+                     sender=sailor_name(meta["author_hash"]),
+                     date=floated(meta.get("thrown_at"))))
         print("\n（想回应的话：/bottle reply <你的回音>）")
         return
 
     save_state(state)
-    print("🌫️ 海面很平静，只捞到一把海草……要不你先扔一只？(/bottle throw)")
+    print(calm())
+    print("\n（要不你先扔一只？/bottle throw）")
+
+
+def floated(thrown_at):
+    """瓶子漂了多久，人话表述。"""
+    try:
+        dt = datetime.strptime(thrown_at, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return ""
+    secs = (datetime.now(timezone.utc) - dt).total_seconds()
+    if secs < 3600:
+        return "不到一小时"
+    if secs < 86400:
+        return f"{int(secs // 3600)} 小时"
+    return f"{int(secs // 86400)} 天"
 
 
 def sailor_name(author_hash):

@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""把瓶中信渲染成 ASCII 漂流瓶卡片（中英文混排自动对齐）。
+
+用法:
+  render_bottle.py fished "<正文>" [--from 代号] [--date 日期]
+  render_bottle.py sealed [--from 代号]
+  render_bottle.py calm
+"""
+import sys
+import unicodedata
+
+INNER = 40  # 瓶内文字区显示宽度
+
+
+def w(ch):
+    return 2 if unicodedata.east_asian_width(ch) in "WF" else 1
+
+
+def dw(s):
+    return sum(w(c) for c in s)
+
+
+NO_HEAD = "，。！？；：、）』」》…—"  # 避头点：这些不落行首
+
+
+def wrap(text, width):
+    lines = []
+    for para in text.split("\n"):
+        cur, curw = "", 0
+        for ch in para:
+            cw = w(ch)
+            if curw + cw > width:
+                if ch in NO_HEAD and cur:
+                    # 标点带着前一个字一起下行
+                    prev = cur[-1]
+                    lines.append(cur[:-1])
+                    cur, curw = prev + ch, dw(prev) + cw
+                else:
+                    lines.append(cur)
+                    cur, curw = ch, cw
+            else:
+                cur += ch
+                curw += cw
+        lines.append(cur)
+    return lines
+
+
+def pad(s, width):
+    return s + " " * (width - dw(s))
+
+
+def fished(text, sender="无名水手", date=""):
+    lines = wrap(text.strip(), INNER)
+    if len(lines) < 3:
+        lines = [""] * ((3 - len(lines)) // 2 + (3 - len(lines)) % 2) + lines
+        lines += [""] * (3 - len(lines) + len(lines) - len(lines))
+        while len(lines) < 3:
+            lines.append("")
+    body = [""] + lines + [""]          # 上下留一行呼吸
+    span = INNER + 6                     # 两侧各 3 空格边距
+    mid = len(body) // 2
+    out = []
+    out.append("         ." + "─" * span + ".")
+    for i, ln in enumerate(body):
+        row = "   " + pad(ln, INNER) + "   "
+        if i == mid:
+            out.append("  =[]==──(" + row + ")")
+        else:
+            out.append("         (" + row + ")")
+    out.append("         '" + "─" * span + "'")
+    tag = f"来自 {sender}" + (f" · 漂了 {date}" if date else "")
+    out.append("            └─ " + tag)
+    out.append("  ~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷")
+    return "\n".join(out)
+
+
+def sealed(sender="你"):
+    return "\n".join([
+        "                .──.",
+        "                |##|          ← 软木塞，封好了",
+        "                |──|",
+        "               /    \\",
+        "              |      |",
+        "              | ~~~~ |",
+        "              | 信在 |",
+        "              | 里面 |",
+        "              | ~~~~ |",
+        "               \\____/",
+        "        ∘  。",
+        "     ~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~",
+        f"       └─ {sender} 的瓶子已经交给海流了",
+    ])
+
+
+def calm():
+    return "\n".join([
+        "                 |",
+        "                 |",
+        "                 J",
+        "                ≀≀≀",
+        "                 ≀",
+        "     ~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~",
+        "       └─ 只钓上来一把海草……海面很平静",
+    ])
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        sys.exit(__doc__)
+    cmd, rest = args[0], args[1:]
+    opts = {}
+    pos = []
+    i = 0
+    while i < len(rest):
+        if rest[i] == "--from":
+            opts["sender"] = rest[i + 1]; i += 2
+        elif rest[i] == "--date":
+            opts["date"] = rest[i + 1]; i += 2
+        else:
+            pos.append(rest[i]); i += 1
+    if cmd == "fished":
+        print(fished(pos[0] if pos else "", **opts))
+    elif cmd == "sealed":
+        print(sealed(**opts))
+    elif cmd == "calm":
+        print(calm())
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()
