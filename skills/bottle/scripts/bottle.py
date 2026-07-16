@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from render_bottle import calm, fished, sealed  # noqa: E402
+from render_bottle import calm, fished_art, sealed  # noqa: E402
 
 REPO = "xixicc186/drift-bottle-sea"
 STATE_FILE = Path.home() / ".bottle" / "state.json"
@@ -140,7 +140,7 @@ def cmd_fish():
         state["last_caught"] = num
         save_state(state)
         print("🎣 捞到一只瓶子！\n")
-        print(fished(bottle_text(issue["body"]),
+        print(fished_art(bottle_text(issue["body"]),
                      sender=sailor_name(meta["author_hash"]),
                      date=floated(meta.get("thrown_at"))))
         print("\n（想回应的话：/bottle reply <你的回音>）")

@@ -8,6 +8,7 @@
 """
 import sys
 import unicodedata
+from pathlib import Path
 
 INNER = 40  # 瓶内文字区显示宽度
 
@@ -71,6 +72,23 @@ def fished(text, sender="无名水手", date=""):
     tag = f"来自 {sender}" + (f" · 漂了 {date}" if date else "")
     out.append("            └─ " + tag)
     out.append("  ~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷~~˷~˷~~˷~~˷~˷")
+    return "\n".join(out)
+
+
+ART = Path(__file__).parent.parent / "assets" / "bottle.txt"
+
+
+def fished_art(text, sender="无名水手", date=""):
+    """大字符画瓶子 + 瓶中信。资产缺失时退回边框卡片。"""
+    if not ART.exists():
+        return fished(text, sender, date)
+    out = [ART.read_text().rstrip(), ""]
+    out.append("      ────────────── 瓶 中 信 ──────────────")
+    for ln in wrap(text.strip(), 40):
+        out.append("        " + ln)
+    tag = f"来自 {sender}" + (f" · 漂了 {date}" if date else "")
+    out.append("      ─────────────────────────────────────")
+    out.append("        └─ " + tag)
     return "\n".join(out)
 
 
