@@ -16,7 +16,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from render_bottle import calm, fished_art, sealed  # noqa: E402
+from render_bottle import calm, easter, fished_art, sealed  # noqa: E402
+
+EGG_RATE = 0.12  # 捞瓶时开出彩蛋的概率（不消耗真瓶子）
 
 REPO = "xixicc186/drift-bottle-sea"
 STATE_FILE = Path.home() / ".bottle" / "state.json"
@@ -119,6 +121,12 @@ def cmd_fish():
         meta = parse_meta(issue["body"])
         if meta and meta.get("author_hash") != my_hash:
             pool.append(issue)
+
+    if pool and random.random() < EGG_RATE:
+        save_state(state)
+        print(easter(random))
+        print("\n（彩蛋不占渔获，海里的瓶子还在。再捞一次试试？）")
+        return
 
     random.shuffle(pool)
     for issue in pool:
