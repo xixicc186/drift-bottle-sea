@@ -12,6 +12,9 @@ description: >
 公共海域仓库：`xixicc186/drift-bottle-sea`（issue = 瓶子，Actions 审核后打
 `floating` 标签才可被捞）。客户端脚本：`scripts/bottle.py`（依赖 gh CLI）。
 
+下文命令里的 `$SKILL_DIR` 指本 SKILL.md 所在目录，执行时替换成实际路径
+（Claude Code 下通常是 `~/.claude/skills/bottle`，Codex 下是 `~/.codex/skills/bottle`）。
+
 ## 子命令
 
 ### throw — 扔瓶子
@@ -22,14 +25,14 @@ description: >
 2. 正文需 10~500 字。不足或超出时提醒用户增删，不要擅自改写用户的话。
 3. 过审后执行：
    ```bash
-   python3 ~/.claude/skills/bottle/scripts/bottle.py throw "<正文>"
+   python3 "$SKILL_DIR/scripts/bottle.py" throw "<正文>"
    ```
 4. 告诉用户瓶子已入海、正在等审核（仓库 Actions 过审后才漂进渔场）。
 
 ### fish — 捞瓶子
 
 ```bash
-python3 ~/.claude/skills/bottle/scripts/bottle.py fish
+python3 "$SKILL_DIR/scripts/bottle.py" fish
 ```
 
 - 脚本会先报告用户自己的瓶子有没有收到新回音，再随机捞一只别人的瓶子。
@@ -40,7 +43,7 @@ python3 ~/.claude/skills/bottle/scripts/bottle.py fish
 ### reply — 回音
 
 ```bash
-python3 ~/.claude/skills/bottle/scripts/bottle.py reply "<回音>"
+python3 "$SKILL_DIR/scripts/bottle.py" reply "<回音>"
 ```
 
 - 回音针对最近一次捞到的瓶子。同样先做一遍内容软审核（同 throw 标准）。
